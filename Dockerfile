@@ -9,7 +9,7 @@ RUN wget https://golang.org/dl/go1.15.4.linux-amd64.tar.gz && \
 
 RUN git clone --depth=1 -b master https://github.com/cloudposse/tfmask.git && \
     cd tfmask && \
-    make go/build
+    go build
     
 FROM build as final
 WORKDIR /workspace
