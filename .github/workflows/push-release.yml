@@ -1,0 +1,59 @@
+name: release
+
+# trigger on published release
+on:
+  release:
+    types: [published]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Lint Dockerfile
+        uses: brpaz/hadolint-action@master
+        with:
+          dockerfile: "Dockerfile"
+
+  build_push_release:
+    runs-on: ubuntu-latest
+    needs: lint
+
+    strategy:
+      matrix:
+        tf_version:
+          - "0.12.29"
+          - "0.13.5"
+          - "0.14.0"
+
+        azcli_version:
+          - "2.15.1"
+
+    env:
+      ORGANIZATION: "smerrell"
+      IMAGE_NAME: "terraform-python-build"
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Get and save release tag
+        run: echo "RELEASE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Build and save image release tag
+        run: echo "IMAGE_RELEASE_TAG=release-${RELEASE_TAG}_terraform-${{ matrix.tf_version }}_azcli-${{ matrix.azcli_version }}" >> $GITHUB_ENV
+
+      - name: Build image
+        run: docker image build . --file Dockerfile --build-arg TF_AZ_CLI_VERSION=release-5.1_terraform-${{ matrix.tf_version }}_azcli${{ matrix.azcli_version }} --tag ${ORGANIZATION}/${IMAGE_NAME}:${IMAGE_RELEASE_TAG}
+
+      - name: Push image to registry
+        run: docker push ${ORGANIZATION}/${IMAGE_NAME}:${IMAGE_RELEASE_TAG}
