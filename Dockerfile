@@ -6,6 +6,14 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN pip3 install gitpython==3.1.12 python-terraform==0.10.1 pyhcl==0.4.4
 
+RUN wget https://golang.org/dl/go1.15.4.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.15.4.linux-amd64.tar.gz && \
+    export PATH=$PATH:/usr/local/go/bin
+
+RUN git clone --depth=1 -b master https://github.com/cloudposse/tfmask.git && \
+    cd tfmask && \
+    go build
+    
 FROM build as final
 WORKDIR /workspace
 RUN groupadd --gid 1001 nonroot \
